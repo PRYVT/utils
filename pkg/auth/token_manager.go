@@ -22,6 +22,25 @@ func NewTokenManager() (*TokenManager, error) {
 	return &TokenManager{signingSecret: secret}, nil
 }
 
+func (tm *TokenManager) GetUserUuidFromToken(tokenString string) (uuid.UUID, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(tm.signingSecret), nil
+	})
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("error while parsing token")
+	}
+	userUuidStr, err := token.Claims.GetSubject()
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("error while getting user uuid from token")
+	}
+	userUuid, err := uuid.Parse(userUuidStr)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("error while parsing user uuid")
+	}
+	return userUuid, nil
+
+}
+
 func (tm *TokenManager) CreateToken(userUuid uuid.UUID) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userUuid,
