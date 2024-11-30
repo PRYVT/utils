@@ -25,39 +25,41 @@ func (ep *EventPolling) PollEvents() {
 
 	for {
 		time.Sleep(100 * time.Millisecond)
-		ep.PollEvent()
+		ep.PollEventsUntilEmpty()
 	}
 
 }
 
-func (ep *EventPolling) PollEvent() {
-	eId, err := ep.eventRepo.GetLastEvent()
-	if err != nil {
-		log.Err(err).Msg("Error while getting last events")
-		return
-	}
-	events, err := ep.client.GetEventsSince(eId, 2)
-	if err != nil {
-		log.Err(err).Msg("Error while polling events")
-		return
-	}
-
-	for _, event := range events {
-
-		err := ep.eventHandler.HandleEvent(event)
+func (ep *EventPolling) PollEventsUntilEmpty() {
+	for {
+		eId, err := ep.eventRepo.GetLastEvent()
 		if err != nil {
-			log.Err(err).Msg("Error while processing event")
-			break
+			log.Err(err).Msg("Error while getting last events")
+			continue
 		}
-	}
-	if len(events) == 0 {
-		return
-	}
-	//will this break the db consistency if there are going to be multiple instances of this service?
-	// probably but if we dont a volume (that both instances use as a db file) this should be fine
-	err = ep.eventRepo.ReplaceEvent(events[len(events)-1].Id)
-	if err != nil {
-		log.Err(err).Msg("Error while replacing event")
+		events, err := ep.client.GetEventsSince(eId, 2)
+		if err != nil {
+			log.Err(err).Msg("Error while polling events")
+			continue
+		}
 
+		for _, event := range events {
+
+			err := ep.eventHandler.HandleEvent(event)
+			if err != nil {
+				log.Err(err).Msg("Error while processing event")
+				break
+			}
+		}
+		if len(events) == 0 {
+			return
+		}
+		//will this break the db consistency if there are going to be multiple instances of this service?
+		// probably but if we dont a volume (that both instances use as a db file) this should be fine
+		err = ep.eventRepo.ReplaceEvent(events[len(events)-1].Id)
+		if err != nil {
+			log.Err(err).Msg("Error while replacing event")
+
+		}
 	}
 }
