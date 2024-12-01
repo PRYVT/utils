@@ -10,21 +10,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type TokenManager struct {
-	signingSecret string
-}
-
-func NewTokenManager() (*TokenManager, error) {
+func getSigningSecret() (string, error) {
 	secret := os.Getenv("SIGNING_SECRET")
 	if secret == "" {
-		return nil, fmt.Errorf("SIGNING_SECRET environment variable not set")
+		return "", fmt.Errorf("SIGNING_SECRET environment variable not set")
 	}
-	return &TokenManager{signingSecret: secret}, nil
+	return secret, nil
 }
 
-func (tm *TokenManager) GetUserUuidFromToken(tokenString string) (uuid.UUID, error) {
+func GetUserUuidFromToken(tokenString string) (uuid.UUID, error) {
+
+	signingSecret, err := getSigningSecret()
+	if err != nil {
+		return uuid.Nil, err
+	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(tm.signingSecret), nil
+		return []byte(signingSecret), nil
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("error while parsing token")
@@ -41,7 +42,13 @@ func (tm *TokenManager) GetUserUuidFromToken(tokenString string) (uuid.UUID, err
 
 }
 
-func (tm *TokenManager) CreateToken(userUuid uuid.UUID) (string, error) {
+func CreateToken(userUuid uuid.UUID) (string, error) {
+
+	signingSecret, err := getSigningSecret()
+	if err != nil {
+		return "", err
+	}
+
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userUuid,
 		"iss": "pryvt",
@@ -50,30 +57,31 @@ func (tm *TokenManager) CreateToken(userUuid uuid.UUID) (string, error) {
 		"iat": time.Now().Unix(),
 	})
 
-	signedKey, err := t.SignedString([]byte(tm.signingSecret))
+	signedKey, err := t.SignedString([]byte(signingSecret))
 	if err != nil {
 		log.Err(err).Msg("Error while signing token")
 		return "", fmt.Errorf("error while signing token")
 	}
 	return signedKey, nil
 }
-func (tm *TokenManager) VerifyToken(tokenString string) (*jwt.Token, error) {
-	// Parse the token with the secret key
+func VerifyToken(tokenString string) (*jwt.Token, error) {
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(tm.signingSecret), nil
-	})
-
-	// Check for verification errors
+	signingSecret, err := getSigningSecret()
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if the token is valid
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(signingSecret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	if !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	// Return the verified token
 	return token, nil
 }

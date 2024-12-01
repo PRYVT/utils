@@ -8,11 +8,10 @@ import (
 )
 
 type AuthMiddleware struct {
-	tokenManager *TokenManager
 }
 
-func NewAuthMiddleware(tm *TokenManager) *AuthMiddleware {
-	return &AuthMiddleware{tokenManager: tm}
+func NewAuthMiddleware() *AuthMiddleware {
+	return &AuthMiddleware{}
 }
 
 func GetTokenFromHeader(c *gin.Context) string {
@@ -46,7 +45,7 @@ func (am *AuthMiddleware) AuthenticateMiddleware(c *gin.Context) {
 	}
 
 	// Verify the token
-	_, err := am.tokenManager.VerifyToken(tokenString)
+	_, err := VerifyToken(tokenString)
 	if err != nil {
 		log.Error().Err(err).Msg("Token verification failed")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})

@@ -13,16 +13,12 @@ func TestGetUserUuidFromToken(t *testing.T) {
 	os.Setenv("SIGNING_SECRET", "testsecret")
 	defer os.Unsetenv("SIGNING_SECRET")
 
-	// Create a new TokenManager
-	tm, err := NewTokenManager()
-	assert.NoError(t, err)
-
 	// Create a test UUID
 	testUuid := uuid.New()
-	tokenString, err := tm.CreateToken(testUuid)
+	tokenString, err := CreateToken(testUuid)
 	assert.NoError(t, err)
 
-	returnedUuid, err := tm.GetUserUuidFromToken(tokenString)
+	returnedUuid, err := GetUserUuidFromToken(tokenString)
 	assert.NoError(t, err)
 	assert.Equal(t, testUuid, returnedUuid)
 }
