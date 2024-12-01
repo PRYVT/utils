@@ -53,7 +53,7 @@ func CreateToken(userUuid uuid.UUID) (string, error) {
 		"sub": userUuid,
 		"iss": "pryvt",
 		"aud": "local-audience",
-		"exp": time.Now().Add(time.Second * 30).Unix(),
+		"exp": time.Now().Add(time.Minute * 30).Unix(),
 		"iat": time.Now().Unix(),
 	})
 
