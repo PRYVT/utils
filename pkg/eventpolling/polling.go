@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/L4B0MB4/EVTSRC/pkg/client"
+	"github.com/PRYVT/utils/pkg/interfaces"
 	"github.com/PRYVT/utils/pkg/store/repository"
 	"github.com/rs/zerolog/log"
 )
@@ -11,10 +12,10 @@ import (
 type EventPolling struct {
 	client       *client.EventSourcingHttpClient
 	eventRepo    *repository.EventRepository
-	eventHandler EventHanlder
+	eventHandler interfaces.EventHandler
 }
 
-func NewEventPolling(client *client.EventSourcingHttpClient, eventRepo *repository.EventRepository, eventHandler EventHanlder) *EventPolling {
+func NewEventPolling(client *client.EventSourcingHttpClient, eventRepo *repository.EventRepository, eventHandler interfaces.EventHandler) *EventPolling {
 	if client == nil || eventRepo == nil || eventHandler == nil {
 		return nil
 	}
