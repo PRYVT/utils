@@ -10,10 +10,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type WebsocketConnectionInterfacer interface {
+	WriteJSON(v interface{}) error
+	ReadForDisconnect()
+}
+
 type WebsocketConnection struct {
 	connection      *websocket.Conn
-	IsConnected     bool
-	IsAuthenticated bool
+	isConnected     bool
+	isAuthenticated bool
 	userUuid        uuid.UUID
 }
 
@@ -23,8 +28,16 @@ func NewWebsocketConnection(conn *websocket.Conn) interfaces.WebsocketConnecter 
 	return wC
 }
 
+func (wC *WebsocketConnection) IsConnected() bool {
+	return wC.isConnected
+}
+
+func (wC *WebsocketConnection) IsAuthenticated() bool {
+	return wC.isAuthenticated
+}
+
 func (wC *WebsocketConnection) WriteJSON(v interface{}) error {
-	if !wC.IsAuthenticated {
+	if !wC.isAuthenticated {
 		return fmt.Errorf("WebsocketConnection is not connected or authenticated")
 	}
 	err := wC.connection.WriteJSON(v)
@@ -35,36 +48,36 @@ func (wC *WebsocketConnection) WriteJSON(v interface{}) error {
 }
 
 func (wC *WebsocketConnection) ReadForDisconnect() {
-	wC.IsConnected = true
+	wC.isConnected = true
 	for {
 		authRequest := AuthRequest{}
 		err := wC.connection.ReadJSON(&authRequest)
 		if err != nil {
 			log.Debug().Err(err).Msg("Error while reading from websocket connection")
-			wC.IsAuthenticated = false
+			wC.isAuthenticated = false
 			wC.connection.Close()
-			wC.IsConnected = false
+			wC.isConnected = false
 			break
 		} else {
 			log.Debug().Interface("authReq", authRequest).Msg("Received auth request")
 			_, err = auth.VerifyToken(authRequest.Token)
 			if err != nil {
 				log.Debug().Err(err).Msg("Error while verifying token")
-				wC.IsAuthenticated = false
+				wC.isAuthenticated = false
 				wC.connection.Close()
-				wC.IsConnected = false
+				wC.isConnected = false
 				break
 			}
 			uuid, err := auth.GetUserUuidFromToken(authRequest.Token)
 			if err != nil {
 				log.Debug().Err(err).Msg("Error while getting user uuid from token")
-				wC.IsAuthenticated = false
+				wC.isAuthenticated = false
 				wC.connection.Close()
-				wC.IsConnected = false
+				wC.isConnected = false
 				break
 			}
 			wC.userUuid = uuid
-			wC.IsAuthenticated = true
+			wC.isAuthenticated = true
 		}
 	}
 }
