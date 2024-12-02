@@ -42,7 +42,7 @@ func GetUserUuidFromToken(tokenString string) (uuid.UUID, error) {
 
 }
 
-func CreateToken(userUuid uuid.UUID) (string, error) {
+func CreateToken(userUuid uuid.UUID, duration time.Duration) (string, error) {
 
 	signingSecret, err := getSigningSecret()
 	if err != nil {
@@ -53,7 +53,7 @@ func CreateToken(userUuid uuid.UUID) (string, error) {
 		"sub": userUuid,
 		"iss": "pryvt",
 		"aud": "local-audience",
-		"exp": time.Now().Add(time.Minute * 30).Unix(),
+		"exp": time.Now().Add(duration).Unix(),
 		"iat": time.Now().Unix(),
 	})
 

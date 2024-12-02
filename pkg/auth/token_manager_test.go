@@ -3,6 +3,7 @@ package auth
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ func TestGetUserUuidFromToken(t *testing.T) {
 
 	// Create a test UUID
 	testUuid := uuid.New()
-	tokenString, err := CreateToken(testUuid)
+	tokenString, err := CreateToken(testUuid, 1*time.Second)
 	assert.NoError(t, err)
 
 	returnedUuid, err := GetUserUuidFromToken(tokenString)
